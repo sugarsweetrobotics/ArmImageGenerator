@@ -67,6 +67,38 @@ static const char* armimagegenerator_spec[] =
     "conf.default.xlim_toward", "240",
     "conf.default.ylim_right", "120",
     "conf.default.ylim_left", "-120",
+    "conf.default.object_z", "10",
+    "conf.default.approach_start_z", "10",
+
+    // Configuration for UR5e
+    "conf.ur5e.debug", "1",
+    "conf.ur5e.j0max", "1.57076",
+    "conf.ur5e.j1max", "1.57076",
+    "conf.ur5e.j0min", "-1.57076",
+    "conf.ur5e.j1min", "-1.57076",
+    "conf.ur5e.j0step", "0.157076",
+    "conf.ur5e.j1step", "0.157076",
+    "conf.ur5e.wait_interval", "1.0",
+    "conf.ur5e.camera_wait_time", "3.0",
+    "conf.ur5e.gripper_close_ratio", "0.1",
+    "conf.ur5e.camera_jointPos0", "0",
+    "conf.ur5e.camera_jointPos1", "-1.57076",
+    "conf.ur5e.camera_jointPos2", "-1.57076",
+    "conf.ur5e.camera_jointPos3", "-1.57076",
+    "conf.ur5e.camera_jointPos4", "0",
+    "conf.ur5e.camera_jointPos5", "0",
+    "conf.ur5e.initial_jointPos0", "0",
+    "conf.ur5e.initial_jointPos1", "-1.57076",
+    "conf.ur5e.initial_jointPos2", "-1.57076",
+    "conf.ur5e.initial_jointPos3", "-1.57076",
+    "conf.ur5e.initial_jointPos4", "1.57076",
+    "conf.ur5e.initial_jointPos5", "0",
+    "conf.ur5e.xlim_back", "420",
+    "conf.ur5e.xlim_toward", "625",
+    "conf.ur5e.ylim_right", "230",
+    "conf.ur5e.ylim_left", "-230",
+    "conf.ur5e.object_z", "170",
+    "conf.ur5e.approach_start_z", "190",
 
     
     // Widget
@@ -190,6 +222,9 @@ RTC::ReturnCode_t ArmImageGenerator::onInitialize()
   //range of y-axis from "left" to "right" (from arm)
   bindParameter("ylim_right", m_ylim_right, "120");
   bindParameter("ylim_left", m_ylim_left, "-120");
+
+  bindParameter("object_z", m_object_z, "10");
+  bindParameter("approach_start_z", m_approach_start_z, "10");
   
   // </rtc-template>
   
@@ -222,8 +257,8 @@ RTC::ReturnCode_t ArmImageGenerator::onActivated(RTC::UniqueId ec_id)
 {
 	std::cout << "[ArmImageGenerator] Initializing Arm and Parameters" << std::endl;
 
-	coil::TimeValue tv1(5.0);
-	coil::sleep(tv1);
+	//coil::TimeValue tv1(5.0);
+	//coil::sleep(tv1);
 
 	std::cout << "[ArmImageGenerator] Waiting Arm Component is Activated....." << std::endl;
 	while (true) {
@@ -323,6 +358,25 @@ RTC::ReturnCode_t ArmImageGenerator::onActivated(RTC::UniqueId ec_id)
 
  	m_JointLog << "x, y, theta, ImageFilename" << std::endl;
     
+
+    std::cout << "[ArmImageGenerator] Escape" << std::endl;
+    //  m_jointPos->length(6);
+    m_jointPos[0] = m_initial_jointPos0;
+    m_jointPos[1] = m_initial_jointPos1;
+    m_jointPos[2] = m_initial_jointPos2;
+    m_jointPos[3] = m_initial_jointPos3;
+    m_jointPos[4] = m_initial_jointPos4;
+    m_jointPos[5] = m_initial_jointPos5;
+
+    ret = m_manipMiddle->movePTPJointAbs(m_jointPos);
+    if (ret->id != JARA_ARM::OK) {
+        std::cout << "ERROR in ServoON" << std::endl;
+        std::cout << " ERRORCODE    :" << ret->id << std::endl;
+        std::cout << " ERRORMESSAGE :" << ret->comment << std::endl;
+    }
+
+
+
  	return RTC::RTC_OK;
  }
 
@@ -330,17 +384,21 @@ RTC::ReturnCode_t ArmImageGenerator::onActivated(RTC::UniqueId ec_id)
 
  RTC::ReturnCode_t ArmImageGenerator::onDeactivated(RTC::UniqueId ec_id)
  {
- 	m_jointPos[0] = 0;
- 	m_jointPos[1] = 0;
- 	m_jointPos[2] = M_PI/2;
- 	m_jointPos[4] = M_PI/2;
-	
- 	JARA_ARM::RETURN_ID_var ret = m_manipMiddle->movePTPJointAbs(m_jointPos);
-	if (ret->id != JARA_ARM::OK) {
-	  std::cout << "ERROR in ServoON" << std::endl;
-	  std::cout << " ERRORCODE    :" << ret->id << std::endl;
-	  std::cout << " ERRORMESSAGE :" << ret->comment << std::endl;
-	}
+     std::cout << "[ArmImageGenerator] Escape" << std::endl;
+     //  m_jointPos->length(6);
+     m_jointPos[0] = m_initial_jointPos0;
+     m_jointPos[1] = m_initial_jointPos1;
+     m_jointPos[2] = m_initial_jointPos2;
+     m_jointPos[3] = m_initial_jointPos3;
+     m_jointPos[4] = m_initial_jointPos4;
+     m_jointPos[5] = m_initial_jointPos5;
+
+     auto ret = m_manipMiddle->movePTPJointAbs(m_jointPos);
+     if (ret->id != JARA_ARM::OK) {
+         std::cout << "ERROR in ServoON" << std::endl;
+         std::cout << " ERRORCODE    :" << ret->id << std::endl;
+         std::cout << " ERRORMESSAGE :" << ret->comment << std::endl;
+     }
   
  	m_JointLog.close();
 
@@ -354,6 +412,7 @@ RTC::ReturnCode_t ArmImageGenerator::onActivated(RTC::UniqueId ec_id)
  double Uniform( void ){
    return ((double)rand()+1.0)/((double)RAND_MAX+2.0);
  }
+
 
 
  RTC::ReturnCode_t ArmImageGenerator::onExecute(RTC::UniqueId ec_id)
@@ -375,9 +434,10 @@ RTC::ReturnCode_t ArmImageGenerator::onActivated(RTC::UniqueId ec_id)
    y /= 1000.0;
 
    // range of z-axis [mm]/1000.0 -> [m]
-   double z = 40 / 1000.0;
-   double z_min = 10 / 1000.0;
+   double z = (m_approach_start_z) / 1000.0;
+   double z_min = m_object_z / 1000.0;
 
+   th = 0;
    double s2 = sin(th);
    double c2 = cos(th);
 
@@ -416,7 +476,9 @@ RTC::ReturnCode_t ArmImageGenerator::onActivated(RTC::UniqueId ec_id)
    coil::sleep(m_sleepTime);
 
    std::cout << "[ArmImageGenerator] Release" << std::endl;
-   ret = m_manipMiddle->moveGripper(50);
+   //ret = m_manipMiddle->moveGripper(50);
+   ret = m_manipMiddle->openGripper();
+
    if (ret->id != JARA_ARM::OK) {
      std::cout << "ERROR in ServoON" << std::endl;
      std::cout << " ERRORCODE    :" << ret->id << std::endl;

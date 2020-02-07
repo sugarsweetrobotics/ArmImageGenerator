@@ -321,6 +321,8 @@ class ArmImageGenerator
   float m_xlim_back;
   float m_ylim_left;
   float m_ylim_right;
+  float m_object_z;
+  float m_approach_start_z;
 
   // </rtc-template>
 
